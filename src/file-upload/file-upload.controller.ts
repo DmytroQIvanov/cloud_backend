@@ -17,9 +17,14 @@ export class FileUploadController {
   @Post('/single')
   @UseInterceptors(FileInterceptor('image'))
   async uploadSingle(@UploadedFile() image: BufferedFile) {
-    return await this.fileUploadService.uploadSingle(image);
+    // return await this.fileUploadService.uploadSingle(image);
   }
 
+  @Get('/all')
+  async getAll(@Param() params: any) {
+    console.log('params', params);
+    return await this.fileUploadService.getAllUrl();
+  }
   @Get('/:id')
   async getSingle(@Param() params: any) {
     console.log('params', params);
