@@ -9,10 +9,18 @@ import { FileModule } from './file/file.module';
 import { DataSource } from 'typeorm';
 import { FileEntity } from './database/entities/file.entity';
 import { UserModule } from './user/user.module';
-import { UserEntity } from './database/entities/user.entity';
+import { UserEntity } from './database/entities/User/user.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { LinkModule } from './link/link.module';
-import { LinkEntity } from './database/entities/link.entity';
+import { LinkEntity } from './database/entities/Link/link.entity';
+import { UserFile } from './database/entities/User/userFile.entity';
+import { LinkFileEntity } from './database/entities/Link/linkFile.entity';
+import { InstrumentsController } from './instruments/instruments.controller';
+import { InstrumentsService } from './instruments/instruments.service';
+import { InstrumentsModule } from './instruments/instruments.module';
+import { InstrumentFileEntity } from './database/entities/Instrument/instrumentFile.entity';
+import { InstrumentFileContainerEntity } from './database/entities/Instrument/InstrumentFileContainer.entity';
+import { MutatedInstrumentFileEntity } from './database/entities/Instrument/mutatedInstrumentFile.entity';
 
 @Module({
   imports: [
@@ -21,12 +29,33 @@ import { LinkEntity } from './database/entities/link.entity';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: '193.160.226.130',
+      // host: 'postgresql.quanticfiles.com',
       port: 5432,
-      username: 'user',
-      password: 'admin',
-      database: 'postgres',
-      entities: [FileEntity, UserEntity, LinkEntity],
+      // port: 443,
+      username: 'DmytroPg_user',
+      password: 'dmytropg_user3331',
+      database: 'quantic_cloud',
+      entities: [
+        FileEntity,
+        UserEntity,
+        LinkEntity,
+        UserFile,
+        LinkFileEntity,
+        InstrumentFileEntity,
+        InstrumentFileContainerEntity,
+        MutatedInstrumentFileEntity,
+      ],
       synchronize: true,
+      // logging: true,
+
+      // ssl: true,
+      //
+      // extra: {
+      //   trustServerCertificate: true,
+      // },
+      // extra: {
+      //   ssl:true,
+      // },
     }),
 
     MinioClientModule,
@@ -35,9 +64,10 @@ import { LinkEntity } from './database/entities/link.entity';
     FileModule,
     UserModule,
     LinkModule,
+    InstrumentsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, InstrumentsController],
+  providers: [AppService, InstrumentsService],
 })
 export class AppModule {
   constructor(private dataSource: DataSource) {}

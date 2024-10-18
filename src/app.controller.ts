@@ -1,12 +1,12 @@
 import {
   Body,
   Controller,
-  Get,
+  Get, Ip,
   Post,
   Req,
   UploadedFile,
-  UseInterceptors,
-} from '@nestjs/common';
+  UseInterceptors
+} from "@nestjs/common";
 import { AppService } from './app.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -15,8 +15,12 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getHello(@Ip() ip,@Req() req): any {
+    let resultIp = ip.toString()
+    console.log("your ip", resultIp.replace("::ffff:",""));
+    return {ip:resultIp.replace("::ffff:",'')}
+    // console.log("your req", req);
+    // return this.appService.getHello();
   }
 
   // @Post('/')

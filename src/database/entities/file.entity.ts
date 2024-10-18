@@ -5,7 +5,8 @@ import {
   ManyToOne,
   CreateDateColumn,
 } from 'typeorm';
-import { LinkEntity } from './link.entity';
+import { LinkEntity } from './Link/link.entity';
+import { UserEntity } from "./User/user.entity";
 
 @Entity('FileEntity')
 export class FileEntity {
@@ -30,14 +31,35 @@ export class FileEntity {
   @Column({ default: null })
   blurHash: string;
 
-  @ManyToOne(() => LinkEntity, (link) => link.files, {
-    onDelete: 'CASCADE',
-  })
-  link: LinkEntity;
+  @Column({ default: null })
+  previewImage: string;
+
+  @Column({default:null})
+  ext:string
+
+
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
+  // --------
+  // FILE IDs
+  // --------
+
   @Column()
   fileId: string;
+
+  @Column({ default: null })
+  fileId_small: string;
+
+  @Column({ default: null })
+  fileId_middle: string;
+
+  @Column({ default: null })
+  fileId_75Percent: string;
+
+  @Column({ default: null })
+  fileId_100PercentCompressed: string;
 }
+
+export default FileEntity

@@ -7,9 +7,10 @@ import { config } from './confing';
     MinioModule.register({
       endPoint: config.MINIO_ENDPOINT,
       port: config.MINIO_PORT,
-      useSSL: false,
+      useSSL: true,
       accessKey: config.MINIO_ACCESSKEY,
       secretKey: config.MINIO_SECRETKEY,
+
     }),
   ],
   providers: [MinioClientService],

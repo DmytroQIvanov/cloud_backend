@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { LinkEntity } from '../database/entities/link.entity';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { LinkEntity } from '../database/entities/Link/link.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FileEntity } from '../database/entities/file.entity';
 import { Repository } from 'typeorm';
 import { FileUploadService } from '../file-upload/file-upload.service';
 import { Cron } from '@nestjs/schedule';
 import { FileService } from '../file/file.service';
 import { MinioClientService } from '../minio-client/minio-client.service';
+import { UserService } from '../user/user.service';
+import { UserEntity } from '../database/entities/User/user.entity';
+import { LinkFileEntity } from "../database/entities/Link/linkFile.entity";
+// import fluent from "fluent-ffmpeg";
 
+const availableHours = 3
 @Injectable()
 export class LinkService {
   constructor(
@@ -16,17 +20,22 @@ export class LinkService {
     private fileUploadService: FileUploadService,
     private fileService: FileService,
     private minioService: MinioClientService,
+    private userService: UserService,
   ) {}
 
-  async createLink() {
-    let result = await this.linkEntityRepository.create({
+  async createLink({ user }: { user: any }) {
+    const result = await this.linkEntityRepository.create({
       name: 'test',
       files: [],
-      willDeleteAt: new Date(new Date().setHours(new Date().getHours() + 1)),
+      willDeleteAt: new Date(new Date().setHours(new Date().getHours() + availableHours)),
+      user: await this.userService.getUserById({ id: user.id }),
       // willDeleteAt: new Date(
       //   new Date().setSeconds(new Date().getSeconds() + 60),
       // ),
     });
+
+    // await this.userService.addLinkToUser({linkEntity:result,userId:user.id})
+
     await this.linkEntityRepository.save(result);
     return result;
   }
@@ -37,67 +46,113 @@ export class LinkService {
     if (result) {
     }
   }
+  async getFile({ fileId }: { fileId: number }) {
+    console.log('fileId', fileId);
+    if (!fileId)
+      throw new HttpException('File not found', HttpStatus.NOT_FOUND);
+    return await this.fileService.getSingleFile(fileId);
+  }
 
-  async addFile({ files, linkId }: { files: any[]; linkId: any }) {
+  async addFile({
+    files,
+    linkId,
+    userId,
+  }: {
+    files: any[];
+    linkId: any;
+    userId: any;
+  }) {
+    console.log('linkId', linkId);
+    console.log('userId', linkId);
+    // ------------
+    // --- USER ---
+    // ------------
+    let user = userId ?
+       await this.userService.getUserById({ id: userId }) :
+       await this.userService.createGuest()
     let Link: LinkEntity;
-    let newLink: Boolean = false;
+    let newLink: boolean = false;
     if (linkId) {
       try {
         Link = await this.linkEntityRepository.findOne({
           where: { id: linkId },
-          relations: { files: true },
+          relations: { files: true ,user:true},
         });
+
       } catch (e) {
-        Link = await this.createLink();
+        Link = await this.createLink({ user });
         newLink = true;
       }
     }
-    // console.log('LINK', Link);
     if (!Link) {
-      Link = await this.createLink();
+      Link = await this.createLink({ user });
       newLink = true;
     }
-
-    let uploadedFiles: FileEntity[] = [];
-    for (const file of files) {
-      await uploadedFiles.push(
-        await this.fileUploadService.uploadSingle(file, Link),
-      );
+    if (Link.user.id!==user.id){
+      throw new HttpException("Заборонено", HttpStatus.FORBIDDEN);
+      return
     }
-    console.log(Link.files, Link);
+
+    const uploadedFiles: LinkFileEntity[] = [];
+    for (const file of files) {
+      // if(file.mimetype.includes('video')){
+      //   console.log('test',fluent(file))
+      // }
+      // let uploadedFile =
+      //   await this.fileUploadService.uploadSingle(file, Link);
+      await uploadedFiles.push(await this.fileService.addOne({ file, link:Link }));
+      // Link.files.push(uploadedFile);
+      // await this.linkEntityRepository.save(Link);
+
+    }
+    // console.log(Link.files, Link);
     Link.files.push(...uploadedFiles);
 
     await this.linkEntityRepository.save(Link);
-    const test1 = new Date(
-      new Date().setHours(new Date().getHours() - 1),
-    ).getTime();
-    const test2 = new Date(
-      new Date().setHours(new Date().getHours()),
-    ).getTime();
     return {
-      test1: { test1, test2, test3: new Date(1725649362727).toDateString() },
       date: new Date(),
       Link,
       linkCode: Link.id,
       filesList: Link.files,
       newLink,
+      user,
+      author:true
     };
     //
   }
-
-  async getLinkFiles({ id }: { id: number }) {
-    const linkWithFiles: any = await this.linkEntityRepository.findOne({
-      where: { id },
+  async getAll() {
+    const res = await this.linkEntityRepository.find({
       relations: { files: true },
     });
-    // console.log('getLinkFiles', linkWithFiles);
+    return res;
+  }
+
+  async getPresignedUrl({fileName}){
+    let result = await this.minioService.getPresignedUrl({fileName});
+    return result;
+
+  }
+
+  async getLinkFiles({ id, userId }: { id: number; userId: number }) {
+    const linkWithFiles: LinkEntity = await this.linkEntityRepository.findOne({
+      where: { id },
+      relations: { files: true,user:true },
+    });
     if (!linkWithFiles) return;
+    let responseData:any = linkWithFiles
     for (const [index, file] of linkWithFiles.files.entries()) {
       // console.log('index', index);
-      linkWithFiles.files[index].url =
-        await this.fileUploadService.getSingleUrl(file.fileId);
+      responseData.files[index].file_url =
+        await this.fileUploadService.getSingleUrl(file.fileId).then(element => element.file_url);
+      if(file?.fileId_small) {
+        responseData.files[index].smallImg_url =
+          await this.fileUploadService.getSingleUrl(file.fileId_small).then(element => element.file_url);
+      }
     }
-    return linkWithFiles;
+    let user;
+    if (userId) user = await this.userService.getUserById({ id: userId });
+    console.log({ ...linkWithFiles, user,author:linkWithFiles.user.id===user?.id });
+    return { ...linkWithFiles, user,author:linkWithFiles.user.id===user?.id };
   }
   async deleteLinkFile({ id, fileId }: { id: number; fileId }) {
     await this.minioService.delete(fileId);
@@ -111,16 +166,18 @@ export class LinkService {
     const allLinkEntities = await this.linkEntityRepository.find({
       relations: { files: true },
     });
-    allLinkEntities.map(async (entity: LinkEntity) => {
-      if (new Date().getTime() >= entity.willDeleteAt.getTime()) {
+    for (const linkEntity of allLinkEntities) {
+      if (new Date().getTime() >= linkEntity.willDeleteAt.getTime()) {
         console.log('deleteOldLinkF - DELETING');
 
-        for (const file of entity.files) {
+        for (const file of linkEntity.files) {
           await this.minioService.delete(file.fileId);
+          file?.fileId_small && await this.minioService.delete(file.fileId_small);
+          file?.fileId_middle && await this.minioService.delete(file.fileId_middle);
           // await this.fileService.deleteOne(file.id);
         }
-        this.linkEntityRepository.delete(entity.id);
+        await this.linkEntityRepository.delete(linkEntity.id);
       }
-    });
+    }
   }
 }

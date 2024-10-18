@@ -26,13 +26,34 @@ export class LinkController {
   addFile(@UploadedFiles() files: any[], @Query() query: any, @Body() body) {
     console.log('files', files, query, body);
     if (!files) return;
-    return this.linkService.addFile({ files, linkId: query.id });
+    return this.linkService.addFile({
+      files,
+      linkId: query.id,
+      userId: query.userId,
+    });
   }
 
-  @Get('/:id')
-  getLinkFiles(@Param() params: any) {
+  @Get('/presignedUrl')
+  getPresignedUrl(@Query() query, @Param() params) {
+    console.log(query);
+    return this.linkService.getPresignedUrl({fileName:query.fileName});
+  }
+  @Get('/')
+  getAll(@Param() params: any) {
     console.log('params', params);
-    return this.linkService.getLinkFiles({ id: params.id });
+    return this.linkService.getAll();
+  }
+  @Get('/:id')
+  getLinkFiles(@Param() params: any, @Query() query) {
+    console.log('params', params);
+    return this.linkService.getLinkFiles({
+      id: params.id,
+      userId: query.userId,
+    });
+  }
+  @Get('/file/:id')
+  getFile(@Query() query, @Param() params) {
+    return this.linkService.getFile({ fileId: params.id });
   }
 
   @Delete('/:id')

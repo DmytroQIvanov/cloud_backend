@@ -26,6 +26,7 @@
     "@nestjs/schedule": "^4.1.0",
     "@nestjs/typeorm": "^10.0.2",
     "@types/minio": "^7.1.1",
+    "husky": "^9.1.5",
     "minio": "^8.0.1",
     "mysql2": "^3.11.0",
     "nestjs-minio-client": "^2.2.0",

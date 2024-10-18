@@ -4,8 +4,12 @@ import {
   PrimaryGeneratedColumn,
   OneToMany,
   CreateDateColumn,
+  OneToOne,
+  JoinColumn,
+  ManyToOne,
 } from 'typeorm';
-import { FileEntity } from './file.entity';
+import { LinkFileEntity } from './linkFile.entity';
+import { UserEntity } from '../User/user.entity';
 
 @Entity('LinkEntity')
 export class LinkEntity {
@@ -15,17 +19,26 @@ export class LinkEntity {
   @Column({ length: 500 })
   name: string;
 
-  @OneToMany(() => FileEntity, (file) => file.link, {
+  @OneToMany(() => LinkFileEntity, (file) => file.link, {
     cascade: true,
     onDelete: 'CASCADE',
   })
-  files: FileEntity[];
+  files: LinkFileEntity[];
+
+  @ManyToOne(() => UserEntity, (user) => user.links)
+  user: UserEntity;
 
   @Column({ default: null })
   password: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
+
+  @Column({ default: null })
+  status: 'deleted' | 'active';
+
+  @Column({ default: 'public' })
+  publicity: 'public' | 'private';
 
   @Column()
   willDeleteAt: Date;

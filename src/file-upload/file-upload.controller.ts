@@ -23,7 +23,7 @@ export class FileUploadController {
   @Get('/all')
   async getAll(@Param() params: any) {
     console.log('params', params);
-    return await this.fileUploadService.getAllUrl();
+    return await this.fileUploadService.getAll2();
   }
   @Get('/:id')
   async getSingle(@Param() params: any) {
