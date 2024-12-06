@@ -157,20 +157,20 @@ export class InstrumentsService {
       switch (instrument) {
         case 'compress-image':
           switch (currentModification.type) {
-            // case 'pixels':
-            //   optionsObject = {
-            //     width: Number(currentModification.width),
-            //     height: Number(currentModification.height),
-            //   };
-            //   mutatedFile = await sharp(resultImg)
-            //     .resize(optionsObject)
-            //     .toFile(file.filename);
-            //
-            //   mutatedFile.buffer = await sharp(resultImg)
-            //     .resize(optionsObject)
-            //     .toBuffer();
-            //
-            //   break;
+            case 'size':
+              optionsObject = {
+                width: Number(currentModification.width),
+                height: Number(currentModification.height),
+              };
+              mutatedFile = await sharp(resultImg)
+                .resize(optionsObject)
+                .toFile(file.filename);
+
+              mutatedFile.buffer = await sharp(resultImg)
+                .resize(optionsObject)
+                .toBuffer();
+
+              break;
 
             case 'percent':
               const config = {
